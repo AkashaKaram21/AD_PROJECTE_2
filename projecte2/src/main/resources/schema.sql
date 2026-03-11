@@ -7,7 +7,7 @@ create table product(
     stock int not null,
     price decimal not null,
     rating decimal null,
-    condition enum('nou','bon_estat','acceptable','mal estat'),
+    condition enum('NOU','BON_ESTAT','ACCEPTABLE','MAL_ESTAT'),
     status boolean default false,
     dataCreated timestamp default current_timestamp,
     dataUpdated timestamp default current_timestamp on update current_timestamp
