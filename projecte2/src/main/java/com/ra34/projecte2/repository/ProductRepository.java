@@ -14,37 +14,54 @@ import java.util.List;
 @Repository
 public interface ProductRepository extends JpaRepository<Product, Long> {
 
-        //Fer una consulta que retorni una llista de productes que el nom contingui el valor de prefix i que el camp status sigui true.
-        List<Product> findByNameContainingAndStatusTrue(String prefix);
+    // Cerca per nom que contingui el valor i que el camp status sigui true
+    @Query("SELECT p FROM Product p WHERE p.name LIKE %:nom% AND p.status = true")
+    List<Product> trobarPerNomQueContinguiIEstatActiu(@Param("nom") String nom);
 
-        List<Product> findByStatusTrue(Pageable pageable);
+    // Cerca per condició i que el camp status sigui true
+    @Query("SELECT p FROM Product p WHERE p.condition = :condicio AND p.status = true")
+    List<Product> trobarPerCondicioIEstatActiu(@Param("condicio") ProductCondition condicio);
 
-        //Fer una consulta que retorni una llista de productes que la condició sigui el valor de condition i el camp status sigui true.
-        List<Product> findByConditionAndStatusTrue(ProductCondition condition);
+    // Ordenació per preu ascendent i que el camp status sigui true
+    @Query("SELECT p FROM Product p WHERE p.status = true ORDER BY p.price ASC")
+    List<Product> trobarActiusOrdenatsPriceAscendent();
 
-        @Query("SELECT p FROM Product p WHERE p.price >= :priceMin AND p.price <= :priceMax AND p.status = true")
-        List<Product> findByPriceRangeAndStatusTrue(
-                @Param("priceMin") Double priceMin,
-                @Param("priceMax") Double priceMax,
-                Pageable pageable
-        );
+    // Ordenació per preu descendent i que el camp status sigui true
+    @Query("SELECT p FROM Product p WHERE p.status = true ORDER BY p.price DESC")
+    List<Product> trobarActiusOrdenatsPriceDescendent();
 
+    // Ordenació per rating ascendent i que el camp status sigui true
+    @Query("SELECT p FROM Product p WHERE p.status = true ORDER BY p.rating ASC")
+    List<Product> trobarActiusOrdenatsRatingAscendent();
 
-        //Fer una consulta que retorni una llista de productes ordenats pel camp rating ascendent o descendent segons el valor de order i el camp status sigui true.
-        @Query("SELECT p FROM Product p WHERE p.status = true AND p.rating IS NOT NULL " +
-                "ORDER BY (p.rating / p.price) DESC LIMIT 5")
-        List<Product> findTop5BestQualityPrice();
+    // Ordenació per rating descendent i que el camp status sigui true
+    @Query("SELECT p FROM Product p WHERE p.status = true ORDER BY p.rating DESC")
+    List<Product> trobarActiusOrdenatsRatingDescendent();
 
-        @Query("SELECT p FROM Product p WHERE p.rating >= :ratingMin AND p.rating <= :ratingMax AND p.status = true")
-        List<Product> findByRatingRangeAndStatusTrue(
-                @Param("ratingMin") Double ratingMin,
-                @Param("ratingMax") Double ratingMax,
-                Pageable pageable
-        );
-        @Query("SELECT p FROM Product p WHERE p.condition = 'NOU' AND p.status = true " +
-                "AND p.rating IS NOT NULL ORDER BY p.rating DESC LIMIT 10")
-        List<Product> findTop10NewProductsByRating();
+    // Cerca per rang de preu, prefix i que el camp status sigui true
+    @Query("SELECT p FROM Product p WHERE p.status = true AND p.price BETWEEN :min AND :max AND p.name LIKE %:prefix%")
+    List<Product> trobarPerRangPreuIPrefixIEstatActiu(@Param("min") Double min, @Param("max") Double max, @Param("prefix") String prefix);
 
-        @Query("SELECT p FROM Product p WHERE p.status = true")
-        Page<Product> findAllActiveWithPagination(Pageable pageable);
+    // Cerca per rang de rating, prefix i que el camp status sigui true
+    @Query("SELECT p FROM Product p WHERE p.status = true AND p.rating BETWEEN :min AND :max AND p.name LIKE %:prefix%")
+    List<Product> trobarPerRangRatingIPrefixIEstatActiu(@Param("min") Double min, @Param("max") Double max, @Param("prefix") String prefix);
+
+    // Cerca per preu mínim i que el camp status sigui true
+    @Query("SELECT p FROM Product p WHERE p.status = true AND p.price >= :min")
+    List<Product> trobarActiusPreuMinim(@Param("min") Double min);
+
+    // Cerca per rating mínim i que el camp status sigui true
+    @Query("SELECT p FROM Product p WHERE p.status = true AND p.rating >= :min")
+    List<Product> trobarActiusRatingMinim(@Param("min") Double min);
+
+    // Consulta per obtenir el top N basat en el càlcul price
+    @Query("SELECT p FROM Product p WHERE p.status = true AND p.price > 0 ORDER BY (p.rating / p.price) DESC")
+    List<Product> trobarTopQualitatPreu(Pageable pageable);
+
+    // Consulta top N productes per condició amb major rating i més nous
+    @Query("SELECT p FROM Product p WHERE p.condition = :condicio AND p.status = true ORDER BY p.dataCreated DESC, p.rating DESC")
+    List<Product> trobarMillorsProductesPerCondicio(@Param("condicio") ProductCondition condicio, Pageable pageable);
+
+    // Cerca per lots paginats i que el camp status sigui true
+    Page<Product> findByStatusTrue(Pageable pageable);
 }

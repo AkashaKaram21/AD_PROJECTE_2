@@ -3,80 +3,56 @@ package com.ra34.projecte2.model;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
 
-import org.antlr.v4.runtime.misc.NotNull;
-
 @Entity
-@Table(name = "product")
+@Table(name = "products")
 public class Product {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-
-    /** Nom del producte: 
-     * obligatori, màxim 20 caràcters */
+    /** Nom del producte: obligatori, màxim 20 caràcters */
     @Column(nullable = false, length = 20)
     private String name;
 
-    /** Descripció del producte:
-     *  màxim 100 caràcters */
+    /** Descripció del producte: màxim 100 caràcters */
     @Column(length = 100)
-    @Size(max = 100, message = "La descripció no pot superar els 100 caràcters")
     private String description;
 
-    /** Estoc disponible: 
-     * obligatori */
+    /** Estoc disponible: obligatori */
     @Column(nullable = false)
-    @NotNull(message = "L'estoc és obligatori")
-    @Min(value = 0, message = "L'estoc no pot ser negatiu")
     private Integer stock;
 
-    /** Preu del producte: 
-     * obligatori */
+    /** Preu del producte: obligatori */
     @Column(nullable = false)
-    @NotNull(message = "El preu és obligatori")
-    @DecimalMin(value = "0.0", inclusive = false, message = "El preu ha de ser positiu")
     private Double price;
 
-    /** Valoració del producte: 
-     * de 0 a 5 */
+    /** Valoració del producte: de 0 a 5 */
     @Column
-    @DecimalMin(value = "0.0", message = "La valoració mínima és 0")
-    @DecimalMax(value = "5.0", message = "La valoració màxima és 5")
     private Double rating;
 
-
-    /**
-     * Condició física del producte és guarda dins d'enum
-     */
+    /** Condició física del producte */
     @Enumerated(EnumType.STRING)
-    @Column
+    @Column(name = "product_condition")
     private ProductCondition condition;
 
-
-    /**
-     * Camp de borrat lògic.
-     * true = producte actiu / false = producte inactiu.
-     */
+    /** Camp de borrat lògic: true = actiu / false = inactiu */
     @Column(nullable = false)
     private Boolean status = true;
 
-
     /** Data i hora de creació del registre */
-    @Column(name = "data_created", updatable = false)
+    @Column(name = "data_created")
     private LocalDateTime dataCreated;
 
     /** Data i hora de l'última modificació del registre */
     @Column(name = "data_updated")
     private LocalDateTime dataUpdated;
 
-    //Constructor
-    public Product() {
-    }
+    public Product() {}
 
-    public Product(Long id, String name, String description, Integer stock, Double price, Double rating,
-            ProductCondition condition, Boolean status, LocalDateTime dataCreated, LocalDateTime dataUpdated) {
+    public Product(Long id, String name, String description, Integer stock, Double price,
+                   Double rating, ProductCondition condition, Boolean status,
+                   LocalDateTime dataCreated, LocalDateTime dataUpdated) {
         this.id = id;
         this.name = name;
         this.description = description;
@@ -89,7 +65,8 @@ public class Product {
         this.dataUpdated = dataUpdated;
     }
 
-    //Getter i Setters
+    
+
     public Long getId() {
         return id;
     }
@@ -173,7 +150,6 @@ public class Product {
     @Override
     public String toString() {
         return "Product{id=" + id + ", name='" + name + "', price=" + price +
-            ", stock=" + stock + ", condition=" + condition + ", status=" + status + "}";
+                ", stock=" + stock + ", condition=" + condition + ", status=" + status + "}";
     }
-
 }

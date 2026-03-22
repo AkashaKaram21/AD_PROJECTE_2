@@ -1,0 +1,12 @@
+version: '3.8'
+services:
+  mysql-projecte2:
+    image: mysql:latest
+    container_name: mysql-projecte2
+    environment:
+      MYSQL_ROOT_PASSWORD: 1234
+      MYSQL_DATABASE: db_projecte2
+      MYSQL_USER: api_user
+      MYSQL_PASSWORD: 1234
+    ports:
+      - "3307:3306"

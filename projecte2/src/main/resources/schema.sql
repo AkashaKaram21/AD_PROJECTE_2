@@ -1,14 +1,12 @@
-drop table if exists product;
-
-create table product(
-    id bigint auto_increment primary key,
-    name varchar(20) not null,
-    description varchar(100) null,
-    stock int not null,
-    price decimal not null,
-    rating decimal null,
-    condition enum('NOU','BON_ESTAT','ACCEPTABLE','MAL_ESTAT'),
-    status boolean default false,
-    dataCreated timestamp default current_timestamp,
-    dataUpdated timestamp default current_timestamp on update current_timestamp
+CREATE TABLE IF NOT EXISTS products (
+    id            BIGINT AUTO_INCREMENT PRIMARY KEY,
+    name          VARCHAR(20)    NOT NULL,
+    description   VARCHAR(100),
+    stock         INT            NOT NULL,
+    price         DECIMAL(10,2)  NOT NULL,
+    rating        DECIMAL(3,2),
+    product_condition ENUM('NOU','BON_ESTAT','ACCEPTABLE','MAL_ESTAT'),
+    status        BOOLEAN,
+    data_created  TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    data_updated  TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
