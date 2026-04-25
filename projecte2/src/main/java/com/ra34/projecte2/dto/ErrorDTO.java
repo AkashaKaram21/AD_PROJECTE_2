@@ -4,28 +4,30 @@ package com.ra34.projecte2.dto;
  * DTO per gestionar els errors no controlats que retorna el controller.
  */
 public class ErrorDTO {
-
+    
     private int status;
-    private String message;
-
-    public ErrorDTO() {}
-
-    public ErrorDTO(int status, String message) {
+    private String description;
+    
+    // Constructor
+    public ErrorDTO(int status, String description) {
         this.status = status;
-        this.message = message;
+        this.description = description;
     }
-
-    public int getStatus() { 
+    
+    // Getters y Setters
+    public int getStatus() {
         return status;
     }
+    
     public void setStatus(int status) {
         this.status = status;
     }
-
-    public String getMessage() {
-        return message; 
+    
+    public String getDescription() {
+        return description;
     }
-    public void setMessage(String message) { 
-        this.message = message; 
+    
+    public void setDescription(String description) {
+        this.description = description;
     }
 }

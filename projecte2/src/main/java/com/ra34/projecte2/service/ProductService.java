@@ -1,248 +1,339 @@
 package com.ra34.projecte2.service;
 
-import com.ra34.projecte2.dto.ProductResponseDTO;
-import com.ra34.projecte2.model.Product;
-import com.ra34.projecte2.model.ProductCondition;
+import com.ra34.projecte2.model.*;
 import com.ra34.projecte2.repository.ProductRepository;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
+import com.ra34.projecte2.mapper.ProductMapper;
+import com.ra34.projecte2.dto.*;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.*;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
-
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
+import java.io.*;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 
 @Service
 public class ProductService {
 
-    // Injecció per constructor 
-    private final ProductRepository productRepository;
+    @Autowired
+    private ProductRepository productRepository;
 
-    public ProductService(ProductRepository productRepository) {
-        this.productRepository = productRepository;
-    }
+    @Autowired
+    private ProductMapper productMapper;
 
-    // converteix Product → ProductResponseDTO
-    private ProductResponseDTO toDTO(Product p) {
-        return new ProductResponseDTO(
-                p.getId(), p.getName(), p.getDescription(),
-                p.getStock(), p.getPrice(), p.getRating(), p.getCondition()
-        );
-    }
 
-    // converteix List<Product> → List<ProductResponseDTO>
-    private List<ProductResponseDTO> toDTOList(List<Product> products) {
+    // Obtener todos los productos
+    public List<ProductResponseDTO> findAll() {
+        List<Product> products = (List<Product>) productRepository.findAll();
         List<ProductResponseDTO> dtos = new ArrayList<>();
+        
         for (Product p : products) {
-            dtos.add(toDTO(p));
+            if (p.getStatus() == true) {
+                ProductResponseDTO dto = productMapper.toDTO(p);
+                dtos.add(dto);
+            }
         }
         return dtos;
     }
 
-    // Càrrega massiva de dades d'un fitxer en format .csv
-    @Transactional
-    public int processCsv(MultipartFile file) throws Exception {
-        int count = 0;
-        int liniaNum = 1;
-        try (BufferedReader br = new BufferedReader(new InputStreamReader(file.getInputStream()))) {
-            String linia = br.readLine(); // capçalera
-            while ((linia = br.readLine()) != null) {
-                liniaNum++;
-                if (linia.trim().isEmpty()) continue;
-                String[] data = linia.split(",");
-                if (data.length < 6) {
-                    throw new Exception("Falten columnes a la línia " + liniaNum);
-                }
-                try {
-                    Product p = new Product();
-                    p.setName(data[0].trim());
-                    p.setDescription(data[1].trim());
-                    p.setStock(Integer.parseInt(data[2].trim()));
-                    p.setPrice(Double.parseDouble(data[3].trim()));
-                    p.setRating(Double.parseDouble(data[4].trim()));
-                    p.setCondition(ProductCondition.valueOf(data[5].trim().toUpperCase()));
-                    p.setStatus(true);
-                    p.setDataCreated(LocalDateTime.now());
-                    productRepository.save(p);
-                    count++;
-                } catch (Exception e) {
-                    throw new Exception("Error a la línia nº " + liniaNum + ": " + e.getMessage());
-                }
+    // Obtener un producto por ID
+    public Optional<ProductResponseDTO> findById(Long id) {
+        Optional<Product> product = productRepository.findById(id);
+        
+        if (product.isPresent()) {
+            Product p = product.get();
+            if (p.getStatus() == true) {
+                ProductResponseDTO dto = productMapper.toDTO(p);
+                return Optional.of(dto);
             }
         }
-        return count;
+        return Optional.empty();
     }
 
-    // Consultar tots els productes
-    public List<ProductResponseDTO> findAll() {
-        return toDTOList(productRepository.findAll());
-    }
-
-    // Consultar un producte per id
-    public ProductResponseDTO findById(Long id) {
-        Optional<Product> p = productRepository.findById(id);
-        if (p.isPresent()) {
-            return toDTO(p.get());
-        }
-        throw new RuntimeException("Producte no trobat amb ID: " + id);
-    }
-
-    // Afegir un producte
-    public ProductResponseDTO saveProduct(Product product) {
+    // Crear un nuevo producto
+    @Transactional
+    public ProductResponseDTO create(ProductRequestDTO dto) {
+        Product product = productMapper.toEntity(dto);
         product.setStatus(true);
         product.setDataCreated(LocalDateTime.now());
-        return toDTO(productRepository.save(product));
+        product.setDataUpdated(LocalDateTime.now());
+        
+        Product saved = productRepository.save(product);
+        ProductResponseDTO result = productMapper.toDTO(saved);
+        return result;
     }
 
-    // Actualitzar un producte sencer
-    public ProductResponseDTO updateProduct(Long id, Product productDTO) {
-        Optional<Product> p = productRepository.findById(id);
-        if (p.isPresent()) {
-            Product product = p.get();
-            product.setName(productDTO.getName());
-            product.setDescription(productDTO.getDescription());
-            product.setStock(productDTO.getStock());
-            product.setPrice(productDTO.getPrice());
-            product.setRating(productDTO.getRating());
-            product.setCondition(productDTO.getCondition());
-            product.setStatus(true);
-            product.setDataUpdated(LocalDateTime.now());
-            return toDTO(productRepository.save(product));
+    // Actualizar producto completo
+    @Transactional
+    public Optional<ProductResponseDTO> update(Long id, ProductRequestDTO dto) {
+        Optional<Product> optional = productRepository.findById(id);
+        
+        if (optional.isPresent()) {
+            Product p = optional.get();
+            
+            if (p.getStatus() == true) {
+                p.setName(dto.getName());
+                p.setDescription(dto.getDescription());
+                p.setStock(dto.getStock());
+                p.setPrice(dto.getPrice());
+                p.setRating(dto.getRating());
+                p.setCondition(dto.getCondition());
+                p.setDataUpdated(LocalDateTime.now());
+                
+                Product saved = productRepository.save(p);
+                ProductResponseDTO result = productMapper.toDTO(saved);
+                return Optional.of(result);
+            }
         }
-        throw new RuntimeException("Producte no trobat amb ID: " + id);
+        return Optional.empty();
     }
 
-    // Modificar l'estoc d'un producte
-    public ProductResponseDTO updateEstoc(Long id, int stock) {
-        Optional<Product> pOpt = productRepository.findById(id);
-        if (pOpt.isPresent()) {
-            Product p = pOpt.get();
-            p.setStock(stock);
+    // Actualizar solo el stock
+    @Transactional
+    public Optional<ProductResponseDTO> updateStock(Long id, Integer stock) {
+        Optional<Product> optional = productRepository.findById(id);
+        
+        if (optional.isPresent()) {
+            Product p = optional.get();
+            
+            if (p.getStatus() == true) {
+                p.setStock(stock);
+                p.setDataUpdated(LocalDateTime.now());
+                
+                Product saved = productRepository.save(p);
+                ProductResponseDTO result = productMapper.toDTO(saved);
+                return Optional.of(result);
+            }
+        }
+        return Optional.empty();
+    }
+
+    // Actualizar solo el precio
+    @Transactional
+    public Optional<ProductResponseDTO> updatePrice(Long id, Double price) {
+        Optional<Product> optional = productRepository.findById(id);
+        
+        if (optional.isPresent()) {
+            Product p = optional.get();
+            
+            if (p.getStatus() == true) {
+                p.setPrice(price);
+                p.setDataUpdated(LocalDateTime.now());
+                
+                Product saved = productRepository.save(p);
+                ProductResponseDTO result = productMapper.toDTO(saved);
+                return Optional.of(result);
+            }
+        }
+        return Optional.empty();
+    }
+
+    // Borrado lógico (status = false)
+    @Transactional
+    public Optional<ProductResponseDTO> logicalDelete(Long id) {
+        Optional<Product> optional = productRepository.findById(id);
+        
+        if (optional.isPresent()) {
+            Product p = optional.get();
+            p.setStatus(false);
             p.setDataUpdated(LocalDateTime.now());
-            return toDTO(productRepository.save(p));
+            
+            Product saved = productRepository.save(p);
+            ProductResponseDTO result = productMapper.toDTO(saved);
+            return Optional.of(result);
         }
-        throw new RuntimeException("Producte no trobat amb ID: " + id);
+        return Optional.empty();
     }
 
-    // Modificar el preu d'un producte
-    public ProductResponseDTO updatePrice(Long id, double price) {
-        Optional<Product> p = productRepository.findById(id);
-        if (p.isPresent()) {
-            Product product = p.get();
-            product.setPrice(price);
-            product.setDataUpdated(LocalDateTime.now());
-            return toDTO(productRepository.save(product));
-        }
-        throw new RuntimeException("Producte no trobat amb ID: " + id);
-    }
-
-    // Borrat físic d'un producte
-    public void deleteProduct(Long id) {
-        Optional<Product> p = productRepository.findById(id);
-        if (p.isPresent()) {
+    // Borrado físico
+    @Transactional
+    public boolean deleteById(Long id) {
+        if (productRepository.existsById(id)) {
             productRepository.deleteById(id);
-        } else {
-            throw new RuntimeException("Producte no trobat amb ID: " + id);
+            return true;
         }
+        return false;
     }
 
-    // Borrat lògic d'un producte
-    public void deleteLogicProduct(Long id) {
-        Optional<Product> p = productRepository.findById(id);
-        if (p.isPresent()) {
-            Product product = p.get();
-            product.setStatus(false);
-            product.setDataUpdated(LocalDateTime.now());
-            productRepository.save(product);
-        } else {
-            throw new RuntimeException("Producte no trobat amb ID: " + id);
-        }
-    }
 
-    // Cerca per nom que contingui el valor i status true
-    @Transactional(readOnly = true)
     public List<ProductResponseDTO> searchByName(String prefix) {
-        return toDTOList(productRepository.trobarPerNomQueContinguiIEstatActiu(prefix));
+        List<Product> products = productRepository.findByNameContainingAndStatusTrue(prefix);
+        List<ProductResponseDTO> dtos = new ArrayList<>();
+        
+        for (Product p : products) {
+            ProductResponseDTO dto = productMapper.toDTO(p);
+            dtos.add(dto);
+        }
+        return dtos;
     }
 
-    // Cerca per condició i status true
-    @Transactional(readOnly = true)
-    public List<ProductResponseDTO> findByCondition(String condicio) {
-        return toDTOList(productRepository.trobarPerCondicioIEstatActiu(
-                ProductCondition.valueOf(condicio.toUpperCase())
-        ));
+    public List<ProductResponseDTO> searchByCondition(Condition condition) {
+        List<Product> products = productRepository.findByConditionAndStatusTrue(condition);
+        List<ProductResponseDTO> dtos = new ArrayList<>();
+        
+        for (Product p : products) {
+            ProductResponseDTO dto = productMapper.toDTO(p);
+            dtos.add(dto);
+        }
+        return dtos;
     }
 
-    // Cerca per camp preu i ordre (asc/desc), amb status true
-    @Transactional(readOnly = true)
-    public List<ProductResponseDTO> getProductsOrderedByCamp(String camp, String ordre) {
-        boolean isDesc = "desc".equalsIgnoreCase(ordre);
-        List<Product> productes;
-
-        if ("rating".equalsIgnoreCase(camp)) {
-            productes = isDesc
-                    ? productRepository.trobarActiusOrdenatsRatingDescendent()
-                    : productRepository.trobarActiusOrdenatsRatingAscendent();
+    public List<ProductResponseDTO> orderByPrice(String order) {
+        List<Product> products;
+        
+        if ("desc".equalsIgnoreCase(order)) {
+            products = productRepository.findByStatusTrueOrderByPriceDesc();
         } else {
-            productes = isDesc
-                    ? productRepository.trobarActiusOrdenatsPriceDescendent()
-                    : productRepository.trobarActiusOrdenatsPriceAscendent();
+            products = productRepository.findByStatusTrueOrderByPriceAsc();
         }
-        return toDTOList(productes);
-    }
-
-    // Cerca per rang de valor preu, prefix i status true
-    @Transactional(readOnly = true)
-    public List<ProductResponseDTO> getProductsBetweenValuesTrue(Double min, Double max,
-                                                                  String prefix, String camp) {
-        if ("price".equalsIgnoreCase(camp)) {
-            return toDTOList(productRepository.trobarPerRangPreuIPrefixIEstatActiu(min, max, prefix));
-        } else if ("rating".equalsIgnoreCase(camp)) {
-            return toDTOList(productRepository.trobarPerRangRatingIPrefixIEstatActiu(min, max, prefix));
+        
+        List<ProductResponseDTO> dtos = new ArrayList<>();
+        for (Product p : products) {
+            ProductResponseDTO dto = productMapper.toDTO(p);
+            dtos.add(dto);
         }
-        throw new RuntimeException("El camp no és vàlid, ha de ser 'price' o 'rating'.");
+        return dtos;
     }
 
-    // Cerca per valor mínim preu i status true
-    @Transactional(readOnly = true)
-    public List<ProductResponseDTO> getProductsOverMinValueTrue(Double min, String camp) {
-        if ("price".equalsIgnoreCase(camp)) {
-            return toDTOList(productRepository.trobarActiusPreuMinim(min));
-        } else if ("rating".equalsIgnoreCase(camp)) {
-            return toDTOList(productRepository.trobarActiusRatingMinim(min));
+    public List<ProductResponseDTO> orderByRating(String order) {
+        List<Product> products;
+        
+        if ("desc".equalsIgnoreCase(order)) {
+            products = productRepository.findByStatusTrueOrderByRatingDesc();
+        } else {
+            products = productRepository.findByStatusTrueOrderByRatingAsc();
         }
-        throw new RuntimeException("El camp no és vàlid, ha de ser 'price' o 'rating'.");
-    }
-
-    // Top N productes amb millor relació qualitat-preu
-    @Transactional(readOnly = true)
-    public List<ProductResponseDTO> getTopQualitatPreu(Integer limit) {
-        Pageable num = PageRequest.of(0, limit != null ? limit : 5);
-        return toDTOList(productRepository.trobarTopQualitatPreu(num));
-    }
-
-    // Top N productes nous amb millor valoració
-    @Transactional(readOnly = true)
-    public List<ProductResponseDTO> getNewProducts(String condicio, Integer limit) {
-        ProductCondition productCondition = ProductCondition.valueOf(condicio.toUpperCase());
-        if (productCondition == ProductCondition.NOU) {
-            Pageable num = PageRequest.of(0, limit != null ? limit : 10);
-            return toDTOList(productRepository.trobarMillorsProductesPerCondicio(productCondition, num));
+        
+        List<ProductResponseDTO> dtos = new ArrayList<>();
+        for (Product p : products) {
+            ProductResponseDTO dto = productMapper.toDTO(p);
+            dtos.add(dto);
         }
-        throw new RuntimeException("Aquesta cerca només admet la condició 'NOU'");
+        return dtos;
     }
 
-    // Cerca per lots paginats de 5 productes
-    @Transactional(readOnly = true)
-    public List<ProductResponseDTO> getProductsPaginated(int pageNumber) {
-        Pageable pageable = PageRequest.of(pageNumber, 5);
-        Page<Product> productPage = productRepository.findByStatusTrue(pageable);
-        return toDTOList(productPage.getContent());
+    public List<ProductResponseDTO> findByPriceRange(Double priceMin, Double priceMax, int limit) {
+        Pageable pageable = PageRequest.of(0, limit);
+        List<Product> products = productRepository.findByPriceRange(priceMin, priceMax, pageable);
+        List<ProductResponseDTO> dtos = new ArrayList<>();
+        
+        for (Product p : products) {
+            ProductResponseDTO dto = productMapper.toDTO(p);
+            dtos.add(dto);
+        }
+        return dtos;
+    }
+
+    public List<ProductResponseDTO> findTop5QualityPrice() {
+        Pageable pageable = PageRequest.of(0, 5);
+        List<Product> products = productRepository.findTop5ByQualityPrice(pageable);
+        List<ProductResponseDTO> dtos = new ArrayList<>();
+        
+        for (Product p : products) {
+            ProductResponseDTO dto = productMapper.toDTO(p);
+            dtos.add(dto);
+        }
+        return dtos;
+    }
+
+    public List<ProductResponseDTO> findByRatingRange(Double ratingMin, Double ratingMax, int limit) {
+        Pageable pageable = PageRequest.of(0, limit);
+        List<Product> products = productRepository.findByRatingRange(ratingMin, ratingMax, pageable);
+        List<ProductResponseDTO> dtos = new ArrayList<>();
+        
+        for (Product p : products) {
+            ProductResponseDTO dto = productMapper.toDTO(p);
+            dtos.add(dto);
+        }
+        return dtos;
+    }
+
+    public List<ProductResponseDTO> findByPriceGreaterThan(Double price) {
+        List<Product> products = productRepository.findByPriceGreaterThan(price);
+        List<ProductResponseDTO> dtos = new ArrayList<>();
+        
+        for (Product p : products) {
+            ProductResponseDTO dto = productMapper.toDTO(p);
+            dtos.add(dto);
+        }
+        return dtos;
+    }
+
+    public List<ProductResponseDTO> findTop10NewWithBestRating() {
+        Pageable pageable = PageRequest.of(0, 10);
+        List<Product> products = productRepository.findTop10NewWithBestRating(pageable);
+        List<ProductResponseDTO> dtos = new ArrayList<>();
+        
+        for (Product p : products) {
+            ProductResponseDTO dto = productMapper.toDTO(p);
+            dtos.add(dto);
+        }
+        return dtos;
+    }
+
+    public long count() {
+        return productRepository.count();
+    }
+
+
+    @Transactional
+    public int bulkLoadFromCsv(MultipartFile file) throws Exception {
+        int count = 0;
+        BufferedReader reader = null;
+        
+        try {
+            reader = new BufferedReader(new InputStreamReader(file.getInputStream()));
+            String line;
+            int lineNumber = 0;
+            
+            while ((line = reader.readLine()) != null) {
+                lineNumber++;
+                
+                if (lineNumber == 1) {
+                    continue;
+                }
+                
+                String[] fields = line.split(",");
+                
+                if (fields.length < 6) {
+                    throw new RuntimeException("Error línea " + lineNumber + ": faltan campos");
+                }
+                
+                String name = fields[0].trim();
+                if (name.isEmpty()) {
+                    throw new RuntimeException("Error línea " + lineNumber + ": nombre vacío");
+                }
+                
+                try {
+                    String description = fields[1].trim();
+                    Integer stock = Integer.parseInt(fields[2].trim());
+                    Double price = Double.parseDouble(fields[3].trim());
+                    
+                    Double rating = null;
+                    String ratingStr = fields[4].trim();
+                    if (!ratingStr.isEmpty()) {
+                        rating = Double.parseDouble(ratingStr);
+                    }
+                    
+                    Condition condition = Condition.valueOf(fields[5].trim().toUpperCase());
+                    
+                    Product p = new Product(name, description, stock, price, rating, condition);
+                    productRepository.save(p);
+                    count++;
+                    
+                } catch (NumberFormatException e) {
+                    throw new RuntimeException("Error línea " + lineNumber + ": formato de número inválido: " + e.getMessage());
+                } catch (IllegalArgumentException e) {
+                    throw new RuntimeException("Error línea " + lineNumber + ": condición no válida");
+                }
+            }
+        } finally {
+            if (reader != null) {
+                reader.close();
+            }
+        }
+        
+        return count;
     }
 }

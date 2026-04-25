@@ -1,8 +1,7 @@
-version: '3.8'
 services:
   mysql-projecte2:
     image: mysql:latest
-    container_name: mysql-projecte2
+    container_name: project2
     environment:
       MYSQL_ROOT_PASSWORD: 1234
       MYSQL_DATABASE: db_projecte2

@@ -2,12 +2,8 @@ package com.ra34.projecte2.dto;
 
 import com.ra34.projecte2.model.Condition;
 
-/**
- * DTO de resposta per protegir informació sensible
- */
-public class ProductResponseDTO {
+public class ProductRequestDTO {
     
-    private Long id;
     private String name;
     private String description;
     private Integer stock;
@@ -16,12 +12,11 @@ public class ProductResponseDTO {
     private Condition condition;
     
     // Constructor vacío
-    public ProductResponseDTO() {}
+    public ProductRequestDTO() {}
     
     // Constructor completo
-    public ProductResponseDTO(Long id, String name, String description, Integer stock, 
-                             Double price, Double rating, Condition condition) {
-        this.id = id;
+    public ProductRequestDTO(String name, String description, Integer stock, 
+                            Double price, Double rating, Condition condition) {
         this.name = name;
         this.description = description;
         this.stock = stock;
@@ -31,14 +26,6 @@ public class ProductResponseDTO {
     }
     
     // Getters y Setters
-    public Long getId() {
-        return id;
-    }
-    
-    public void setId(Long id) {
-        this.id = id;
-    }
-    
     public String getName() {
         return name;
     }

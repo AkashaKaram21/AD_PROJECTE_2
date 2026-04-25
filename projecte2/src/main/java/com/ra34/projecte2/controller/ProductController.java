@@ -1,222 +1,450 @@
 package com.ra34.projecte2.controller;
 
-import com.ra34.projecte2.dto.ErrorDTO;
-import com.ra34.projecte2.dto.ProductResponseDTO;
-import com.ra34.projecte2.model.Product;
+import com.ra34.projecte2.model.Condition;
 import com.ra34.projecte2.service.ProductService;
+import com.ra34.projecte2.dto.*;
+
+import java.util.Optional;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
-
 import java.util.List;
 
 @RestController
 @RequestMapping("/api/products")
 public class ProductController {
 
-    // Injecció per constructor 
-    private final ProductService productService;
+    @Autowired
+    private ProductService productService;
 
-    public ProductController(ProductService productService) {
-        this.productService = productService;
-    }
-
-    // Càrrega massiva de dades d'un fitxer en format .csv
-    @PostMapping("/csv")
-    public ResponseEntity<?> processCsv(@RequestParam("file") MultipartFile file) {
-        try {
-            int count = productService.processCsv(file);
-            return ResponseEntity.ok("Productes carregats correctament: " + count);
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body(new ErrorDTO(400, e.getMessage()));
-        }
-    }
-
-    // Consultar tots els productes
+    /**
+     * GET /api/products
+     * Obtener todos los productos disponibles
+     */
     @GetMapping
-    public ResponseEntity<?> findAll() {
+    public ResponseEntity<?> getAllProducts() {
         try {
             List<ProductResponseDTO> products = productService.findAll();
             return ResponseEntity.ok(products);
         } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(new ErrorDTO(500, e.getMessage()));
+            ErrorDTO error = new ErrorDTO(500, "Error al obtener productos: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
         }
     }
 
-    // Consultar un producte per id
+    /**
+     * GET /api/products/{id}
+     * Obtener un producto por ID
+     * Retorna:
+     * 200 = OK con Product
+     * 404 = NOT_FOUND
+     */
     @GetMapping("/{id}")
-    public ResponseEntity<?> findById(@PathVariable Long id) {
+    public ResponseEntity<?> getProductById(@PathVariable Long id) {
         try {
-            return ResponseEntity.ok(productService.findById(id));
+            Optional<ProductResponseDTO> product = productService.findById(id);
+            
+            if (product.isPresent()) {
+                return ResponseEntity.ok(product.get());
+            } else {
+                ErrorDTO error = new ErrorDTO(404, "Producto con ID " + id + " no encontrado");
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
+            }
         } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                    .body(new ErrorDTO(404, e.getMessage()));
+            ErrorDTO error = new ErrorDTO(500, "Error al obtener producto: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
         }
     }
 
-    // Afegir un producte
+    /**
+     * POST /api/products
+     * Crear un nuevo producto
+     * Retorna:
+     * 201 = CREATED
+     * 400 = BAD REQUEST
+     */
     @PostMapping
-    public ResponseEntity<?> saveProduct(@RequestBody Product product) {
+    public ResponseEntity<?> createProduct(@RequestBody ProductRequestDTO dto) {
         try {
-            return ResponseEntity.status(HttpStatus.CREATED)
-                    .body(productService.saveProduct(product));
+            ProductResponseDTO created = productService.create(dto);
+            return ResponseEntity.status(HttpStatus.CREATED).body(created);
         } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body(new ErrorDTO(400, e.getMessage()));
+            ErrorDTO error = new ErrorDTO(400, "Error al crear producto: " + e.getMessage());
+            return ResponseEntity.badRequest().body(error);
         }
     }
 
-    // Actualitzar un producte sencer
+    /**
+     * PUT /api/products/{id}
+     * Actualizar todos los campos de un producto
+     * Retorna:
+     * 200 = OK
+     * 404 = NOT_FOUND
+     */
     @PutMapping("/{id}")
-    public ResponseEntity<?> updateProduct(@PathVariable Long id, @RequestBody Product product) {
+    public ResponseEntity<?> updateProduct(@PathVariable Long id, @RequestBody ProductRequestDTO dto) {
         try {
-            return ResponseEntity.ok(productService.updateProduct(id, product));
+            Optional<ProductResponseDTO> updated = productService.update(id, dto);
+            
+            if (updated.isPresent()) {
+                return ResponseEntity.ok(updated.get());
+            } else {
+                ErrorDTO error = new ErrorDTO(404, "Producto con ID " + id + " no encontrado");
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
+            }
         } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                    .body(new ErrorDTO(404, e.getMessage()));
+            ErrorDTO error = new ErrorDTO(500, "Error al actualizar producto: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
         }
     }
 
-    // Modificar l'estoc d'un producte
-    @PatchMapping("/{id}/estoc")
-    public ResponseEntity<?> updateEstoc(@PathVariable Long id, @RequestParam int stock) {
+    /**
+     * PATCH /api/products/{id}/stock
+     * Actualizar solo el stock
+     * Retorna:
+     * 200 = OK
+     * 404 = NOT_FOUND
+     */
+    @PatchMapping("/{id}/stock")
+    public ResponseEntity<?> updateStock(@PathVariable Long id, @RequestParam Integer stock) {
         try {
-            return ResponseEntity.ok(productService.updateEstoc(id, stock));
+            Optional<ProductResponseDTO> updated = productService.updateStock(id, stock);
+            
+            if (updated.isPresent()) {
+                return ResponseEntity.ok(updated.get());
+            } else {
+                ErrorDTO error = new ErrorDTO(404, "Producto con ID " + id + " no encontrado");
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
+            }
         } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                    .body(new ErrorDTO(404, e.getMessage()));
+            ErrorDTO error = new ErrorDTO(500, "Error al actualizar stock: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
         }
     }
 
-    // Modificar el preu d'un producte
-    @PatchMapping("/{id}/preu")
-    public ResponseEntity<?> updatePrice(@PathVariable Long id, @RequestParam double price) {
+    /**
+     * PATCH /api/products/{id}/price
+     * Actualizar solo el precio
+     * Retorna:
+     * 200 = OK
+     * 404 = NOT_FOUND
+     */
+    @PatchMapping("/{id}/price")
+    public ResponseEntity<?> updatePrice(@PathVariable Long id, @RequestParam Double price) {
         try {
-            return ResponseEntity.ok(productService.updatePrice(id, price));
+            Optional<ProductResponseDTO> updated = productService.updatePrice(id, price);
+            
+            if (updated.isPresent()) {
+                return ResponseEntity.ok(updated.get());
+            } else {
+                ErrorDTO error = new ErrorDTO(404, "Producto con ID " + id + " no encontrado");
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
+            }
         } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                    .body(new ErrorDTO(404, e.getMessage()));
+            ErrorDTO error = new ErrorDTO(500, "Error al actualizar precio: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
         }
     }
 
-    // Borrat físic d'un producte
+    /**
+     * DELETE /api/products/{id}
+     * Borrado físico (eliminación real)
+     * Retorna:
+     * 204 = NO_CONTENT
+     * 404 = NOT_FOUND
+     */
     @DeleteMapping("/{id}")
     public ResponseEntity<?> deleteProduct(@PathVariable Long id) {
         try {
-            productService.deleteProduct(id);
-            return ResponseEntity.noContent().build();
+            boolean deleted = productService.deleteById(id);
+            
+            if (deleted) {
+                return ResponseEntity.noContent().build();
+            } else {
+                ErrorDTO error = new ErrorDTO(404, "Producto con ID " + id + " no encontrado");
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
+            }
         } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                    .body(new ErrorDTO(404, e.getMessage()));
+            ErrorDTO error = new ErrorDTO(500, "Error al eliminar producto: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
         }
     }
 
-    // Borrat lògic d'un producte
-    @DeleteMapping("/logic/{id}")
-    public ResponseEntity<?> deleteLogicProduct(@PathVariable Long id) {
+    /**
+     * DELETE /api/products/{id}/logical
+     * Borrado lógico (status = false)
+     * Retorna:
+     * 200 = OK
+     * 404 = NOT_FOUND
+     */
+    @DeleteMapping("/{id}/logical")
+    public ResponseEntity<?> logicalDeleteProduct(@PathVariable Long id) {
         try {
-            productService.deleteLogicProduct(id);
-            return ResponseEntity.noContent().build();
+            Optional<ProductResponseDTO> deleted = productService.logicalDelete(id);
+            
+            if (deleted.isPresent()) {
+                return ResponseEntity.ok(deleted.get());
+            } else {
+                ErrorDTO error = new ErrorDTO(404, "Producto con ID " + id + " no encontrado");
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
+            }
         } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                    .body(new ErrorDTO(404, e.getMessage()));
+            ErrorDTO error = new ErrorDTO(500, "Error al eliminar producto: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
         }
     }
 
-    // Cerca per nom que contingui el valor i status true
-    @GetMapping("/search/nom")
+
+    /**
+     * GET /api/products/count
+     * Contar el total de productos
+     */
+    @GetMapping("/count")
+    public ResponseEntity<?> countProducts() {
+        try {
+            long count = productService.count();
+            return ResponseEntity.ok(count);
+        } catch (Exception e) {
+            ErrorDTO error = new ErrorDTO(500, "Error al contar productos: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
+        }
+    }
+
+    /**
+     * GET /api/products/search/name?prefix=text
+     * Buscar por nombre (contiene)
+     */
+    @GetMapping("/search/name")
     public ResponseEntity<?> searchByName(@RequestParam String prefix) {
         try {
-            return ResponseEntity.ok(productService.searchByName(prefix));
+            List<ProductResponseDTO> products = productService.searchByName(prefix);
+            
+            if (products.isEmpty()) {
+                ErrorDTO error = new ErrorDTO(404, "No se encontraron productos con nombre '" + prefix + "'");
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
+            }
+            return ResponseEntity.ok(products);
         } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(new ErrorDTO(500, e.getMessage()));
+            ErrorDTO error = new ErrorDTO(500, "Error en búsqueda: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
         }
     }
 
-    // Cerca per condició i status true
+    /**
+     * GET /api/products/search/condition?condition=NOU
+     * Buscar por condición
+     */
     @GetMapping("/search/condition")
-    public ResponseEntity<?> findByCondition(@RequestParam String condition) {
+    public ResponseEntity<?> searchByCondition(@RequestParam String condition) {
         try {
-            return ResponseEntity.ok(productService.findByCondition(condition));
+            Condition cond;
+            try {
+                cond = Condition.valueOf(condition.toUpperCase());
+            } catch (IllegalArgumentException e) {
+                ErrorDTO error = new ErrorDTO(400, "Condición no válida: " + condition);
+                return ResponseEntity.badRequest().body(error);
+            }
+            
+            List<ProductResponseDTO> products = productService.searchByCondition(cond);
+            
+            if (products.isEmpty()) {
+                ErrorDTO error = new ErrorDTO(404, "No se encontraron productos con condición '" + condition + "'");
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
+            }
+            return ResponseEntity.ok(products);
         } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body(new ErrorDTO(400, e.getMessage()));
+            ErrorDTO error = new ErrorDTO(500, "Error en búsqueda: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
         }
     }
 
-    // Cerca per camp preu i ordre (asc/desc), amb status true
-    @GetMapping("/search/order")
-    public ResponseEntity<?> getProductsOrderedByCamp(@RequestParam String camp,
-                                                       @RequestParam String order) {
+    /**
+     * GET /api/products/search/price/asc
+     * Ordenar por precio ascendente
+     */
+    @GetMapping("/search/price/asc")
+    public ResponseEntity<?> orderByPriceAsc() {
         try {
-            return ResponseEntity.ok(productService.getProductsOrderedByCamp(camp, order));
+            List<ProductResponseDTO> products = productService.orderByPrice("asc");
+            return ResponseEntity.ok(products);
         } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body(new ErrorDTO(400, e.getMessage()));
+            ErrorDTO error = new ErrorDTO(500, "Error en ordenamiento: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
         }
     }
 
-    // Cerca per rang de valor preu, prefix i status true
-    @GetMapping("/search/rang")
-    public ResponseEntity<?> getProductsBetweenValuesTrue(@RequestParam Double min,
-                                                           @RequestParam Double max,
-                                                           @RequestParam String prefix,
-                                                           @RequestParam String camp) {
+    /**
+     * GET /api/products/search/price/desc
+     * Ordenar por precio descendente
+     */
+    @GetMapping("/search/price/desc")
+    public ResponseEntity<?> orderByPriceDesc() {
         try {
-            return ResponseEntity.ok(productService.getProductsBetweenValuesTrue(min, max, prefix, camp));
+            List<ProductResponseDTO> products = productService.orderByPrice("desc");
+            return ResponseEntity.ok(products);
         } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body(new ErrorDTO(400, e.getMessage()));
+            ErrorDTO error = new ErrorDTO(500, "Error en ordenamiento: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
         }
     }
 
-    // Cerca per valor mínim preu i status true
-    @GetMapping("/search/minim")
-    public ResponseEntity<?> getProductsOverMinValueTrue(@RequestParam Double min,
-                                                          @RequestParam String camp) {
+    /**
+     * GET /api/products/search/rating/asc
+     * Ordenar por rating ascendente
+     */
+    @GetMapping("/search/rating/asc")
+    public ResponseEntity<?> orderByRatingAsc() {
         try {
-            return ResponseEntity.ok(productService.getProductsOverMinValueTrue(min, camp));
+            List<ProductResponseDTO> products = productService.orderByRating("asc");
+            return ResponseEntity.ok(products);
         } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body(new ErrorDTO(400, e.getMessage()));
+            ErrorDTO error = new ErrorDTO(500, "Error en ordenamiento: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
         }
     }
 
-    // Top N productes amb millor relació qualitat-preu
-    @GetMapping("/top-qualitat-preu")
-    public ResponseEntity<?> getTopQualitatPreu(@RequestParam(required = false) Integer limit) {
+    /**
+     * GET /api/products/search/rating/desc
+     * Ordenar por rating descendente
+     */
+    @GetMapping("/search/rating/desc")
+    public ResponseEntity<?> orderByRatingDesc() {
         try {
-            return ResponseEntity.ok(productService.getTopQualitatPreu(limit));
+            List<ProductResponseDTO> products = productService.orderByRating("desc");
+            return ResponseEntity.ok(products);
         } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(new ErrorDTO(500, e.getMessage()));
+            ErrorDTO error = new ErrorDTO(500, "Error en ordenamiento: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
         }
     }
 
-    // Top N productes nous amb millor valoració
-    @GetMapping("/nous")
-    public ResponseEntity<?> getNewProducts(@RequestParam String condicio,
-                                             @RequestParam(required = false) Integer limit) {
+    /**
+     * GET /api/products/search/price-range?priceMin=10&priceMax=100&limit=10
+     * Rango de precio
+     */
+    @GetMapping("/search/price-range")
+    public ResponseEntity<?> findByPriceRange(
+            @RequestParam Double priceMin,
+            @RequestParam Double priceMax,
+            @RequestParam(defaultValue = "10") int limit) {
         try {
-            return ResponseEntity.ok(productService.getNewProducts(condicio, limit));
+            List<ProductResponseDTO> products = productService.findByPriceRange(priceMin, priceMax, limit);
+            
+            if (products.isEmpty()) {
+                ErrorDTO error = new ErrorDTO(404, "No se encontraron productos en el rango especificado");
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
+            }
+            return ResponseEntity.ok(products);
         } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body(new ErrorDTO(400, e.getMessage()));
+            ErrorDTO error = new ErrorDTO(500, "Error en búsqueda: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
         }
     }
 
-    // Cerca per lots paginats de 5 productes
-    @GetMapping("/paginats")
-    public ResponseEntity<?> getProductsPaginated(@RequestParam int pagina) {
+    /**
+     * GET /api/products/search/top-quality-price
+     * Top 5 mejor relación calidad-precio
+     */
+    @GetMapping("/search/top-quality-price")
+    public ResponseEntity<?> findTop5QualityPrice() {
         try {
-            return ResponseEntity.ok(productService.getProductsPaginated(pagina));
+            List<ProductResponseDTO> products = productService.findTop5QualityPrice();
+            
+            if (products.isEmpty()) {
+                ErrorDTO error = new ErrorDTO(404, "No se encontraron productos con rating");
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
+            }
+            return ResponseEntity.ok(products);
         } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(new ErrorDTO(500, e.getMessage()));
+            ErrorDTO error = new ErrorDTO(500, "Error en búsqueda: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
+        }
+    }
+
+    /**
+     * GET /api/products/search/rating-range?ratingMin=3&ratingMax=5&limit=10
+     * Rango de rating
+     */
+    @GetMapping("/search/rating-range")
+    public ResponseEntity<?> findByRatingRange(
+            @RequestParam Double ratingMin,
+            @RequestParam Double ratingMax,
+            @RequestParam(defaultValue = "10") int limit) {
+        try {
+            List<ProductResponseDTO> products = productService.findByRatingRange(ratingMin, ratingMax, limit);
+            
+            if (products.isEmpty()) {
+                ErrorDTO error = new ErrorDTO(404, "No se encontraron productos en el rango especificado");
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
+            }
+            return ResponseEntity.ok(products);
+        } catch (Exception e) {
+            ErrorDTO error = new ErrorDTO(500, "Error en búsqueda: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
+        }
+    }
+
+    /**
+     * GET /api/products/search/price-above?price=100
+     * Productos con precio superior
+     */
+    @GetMapping("/search/price-above")
+    public ResponseEntity<?> findByPriceGreaterThan(@RequestParam Double price) {
+        try {
+            List<ProductResponseDTO> products = productService.findByPriceGreaterThan(price);
+            
+            if (products.isEmpty()) {
+                ErrorDTO error = new ErrorDTO(404, "No se encontraron productos con precio superior a " + price);
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
+            }
+            return ResponseEntity.ok(products);
+        } catch (Exception e) {
+            ErrorDTO error = new ErrorDTO(500, "Error en búsqueda: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
+        }
+    }
+
+    /**
+     * GET /api/products/search/top-new
+     * Top 10 productos nuevos con mejor rating
+     */
+    @GetMapping("/search/top-new")
+    public ResponseEntity<?> findTop10NewWithBestRating() {
+        try {
+            List<ProductResponseDTO> products = productService.findTop10NewWithBestRating();
+            
+            if (products.isEmpty()) {
+                ErrorDTO error = new ErrorDTO(404, "No se encontraron productos nuevos");
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
+            }
+            return ResponseEntity.ok(products);
+        } catch (Exception e) {
+            ErrorDTO error = new ErrorDTO(500, "Error en búsqueda: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
+        }
+    }
+
+    /**
+     * POST /api/products/bulk
+     * Cargar productos desde CSV (multipart/form-data, file=...)
+     */
+    @PostMapping("/bulk")
+    public ResponseEntity<?> bulkLoadCsv(@RequestParam("file") MultipartFile file) {
+        try {
+            if (file == null || file.isEmpty()) {
+                ErrorDTO error = new ErrorDTO(400, "El archivo está vacío");
+                return ResponseEntity.badRequest().body(error);
+            }
+            
+            int count = productService.bulkLoadFromCsv(file);
+            String message = "Se han añadido correctamente " + count + " productos.";
+            return ResponseEntity.ok(message);
+            
+        } catch (Exception e) {
+            ErrorDTO error = new ErrorDTO(400, "Error carga CSV: " + e.getMessage());
+            return ResponseEntity.badRequest().body(error);
         }
     }
 }
