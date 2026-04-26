@@ -63,5 +63,6 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
     // Top 10 productos nuevos (NOU) con mejor valoración
     @Query("SELECT p FROM Product p WHERE p.condition = 'NOU' AND p.status = true " +
             "AND p.rating IS NOT NULL ORDER BY p.rating DESC")
-    List<Product> findTop10NewWithBestRating(Pageable pageable);
+    List<Product> findTop10NewWithBestRating(Pageable pageable); 
+    
 }
