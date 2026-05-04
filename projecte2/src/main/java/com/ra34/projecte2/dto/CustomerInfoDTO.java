@@ -1,30 +1,21 @@
 package com.ra34.projecte2.dto;
 
-public class UserRequestDTO {
-    private String email;
-    private String password;
+public class CustomerInfoDTO {
+    private Long id;
     private String firstName;
     private String lastName;
     private String phone;
 
     // Constructor
-    public UserRequestDTO() {}
+    public CustomerInfoDTO() {}
 
     // Getters y Setters
-    public String getEmail() {
-        return email;
+    public Long getId() {
+        return id;
     }
 
-    public void setEmail(String email) {
-        this.email = email;
-    }
-
-    public String getPassword() {
-        return password;
-    }
-
-    public void setPassword(String password) {
-        this.password = password;
+    public void setId(Long id) {
+        this.id = id;
     }
 
     public String getFirstName() {

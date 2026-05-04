@@ -3,9 +3,8 @@ package com.ra34.projecte2.model;
 import jakarta.persistence.*;
 
 @Entity
-@Table(name = "order_items")
+@Table(name = "order_item")
 public class OrderItem {
-
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -13,26 +12,28 @@ public class OrderItem {
     @Column(nullable = false)
     private Integer quantity;
 
-    @Column(name = "unit_price", nullable = false)
-    private Double unitPrice;
+    @Column(nullable = false)
+    private Double price; // Precio capturado en el momento de la orden
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "order_id", nullable = false)
     private Order order;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "product_id", nullable = false)
     private Product product;
 
+    // Constructor
     public OrderItem() {}
 
-    public OrderItem(Order order, Product product, Integer quantity, Double unitPrice) {
+    public OrderItem(Integer quantity, Double price, Order order, Product product) {
+        this.quantity = quantity;
+        this.price = price;
         this.order = order;
         this.product = product;
-        this.quantity = quantity;
-        this.unitPrice = unitPrice;
     }
 
+    // Getters y Setters
     public Long getId() {
         return id;
     }
@@ -49,12 +50,12 @@ public class OrderItem {
         this.quantity = quantity;
     }
 
-    public Double getUnitPrice() {
-        return unitPrice;
+    public Double getPrice() {
+        return price;
     }
 
-    public void setUnitPrice(Double unitPrice) {
-        this.unitPrice = unitPrice;
+    public void setPrice(Double price) {
+        this.price = price;
     }
 
     public Order getOrder() {
@@ -72,6 +73,4 @@ public class OrderItem {
     public void setProduct(Product product) {
         this.product = product;
     }
-
-    
 }

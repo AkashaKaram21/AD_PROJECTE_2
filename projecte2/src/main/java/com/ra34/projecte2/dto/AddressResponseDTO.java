@@ -1,37 +1,14 @@
-package com.ra34.projecte2.model;
+package com.ra34.projecte2.dto;
 
-import jakarta.persistence.*;
-
-@Entity
-@Table(name = "address")
-public class Address {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+public class AddressResponseDTO {
     private Long id;
-
-    @Column(nullable = false)
     private String street;
-
-    @Column(nullable = false)
     private String city;
-
     private String postalCode;
-
     private String country;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "customer_id", nullable = false)
-    private Customer customer;
-
     // Constructor
-    public Address() {}
-
-    public Address(String street, String city, String postalCode, String country) {
-        this.street = street;
-        this.city = city;
-        this.postalCode = postalCode;
-        this.country = country;
-    }
+    public AddressResponseDTO() {}
 
     // Getters y Setters
     public Long getId() {
@@ -72,13 +49,5 @@ public class Address {
 
     public void setCountry(String country) {
         this.country = country;
-    }
-
-    public Customer getCustomer() {
-        return customer;
-    }
-
-    public void setCustomer(Customer customer) {
-        this.customer = customer;
     }
 }

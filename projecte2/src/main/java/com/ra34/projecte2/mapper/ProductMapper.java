@@ -9,6 +9,7 @@ import java.util.List;
 
 @Component
 public class ProductMapper {
+
     public ProductResponseDTO toDTO(Product p) {
         if (p == null) return null;
         ProductResponseDTO dto = new ProductResponseDTO();
@@ -41,6 +42,4 @@ public class ProductMapper {
         }
         return dtos;
     }
-
-    
 }

@@ -1,57 +1,49 @@
 package com.ra34.projecte2.model;
 
 import jakarta.persistence.*;
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
 @Entity
-@Table(name = "customers")
+@Table(name = "customer")
 public class Customer {
-
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "first_name")
+    @Column(nullable = false)
     private String firstName;
 
-    @Column(name = "last_name")
+    @Column(nullable = false)
     private String lastName;
 
     private String phone;
 
-    @Column(nullable = false)
-    private Boolean status = true;
-
-    @Column(name = "data_created")
-    private LocalDateTime dataCreated;
-
-    @Column(name = "data_updated")
-    private LocalDateTime dataUpdated;
-
-    @OneToOne
-    @JoinColumn(name = "user_id")
+    // Propietari de OneToOne: Customer té la columna user_id
+    @OneToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id", unique = true)
     private User user;
 
-    @OneToMany(mappedBy = "customer", cascade = CascadeType.ALL, orphanRemoval = true)
+    // cascade ALL + orphanRemoval: eliminar Customer elimina les adreces
+    @OneToMany(mappedBy = "customer", fetch = FetchType.LAZY,
+            cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Address> addresses = new ArrayList<>();
 
-    // 1. CONSTRUCTOR VACÍO (Obligatorio para JPA)
+    // Sense cascade ALL: les comandes son independents del customer
+    @OneToMany(mappedBy = "customer", fetch = FetchType.LAZY,
+            cascade = {CascadeType.PERSIST, CascadeType.MERGE})
+    private List<Order> orders = new ArrayList<>();
+
+    // Constructor
     public Customer() {}
 
-    // 2. CONSTRUCTOR QUE PIDE EL SERVICE (El que te falta)
     public Customer(String firstName, String lastName, String phone) {
         this.firstName = firstName;
         this.lastName = lastName;
         this.phone = phone;
-        this.status = true;
-        this.dataCreated = LocalDateTime.now();
-        this.dataUpdated = LocalDateTime.now();
     }
 
-    // --- GETTERS Y SETTERS ---
-
+    // Getters y Setters
     public Long getId() {
         return id;
     }
@@ -84,30 +76,6 @@ public class Customer {
         this.phone = phone;
     }
 
-    public Boolean getStatus() {
-        return status;
-    }
-
-    public void setStatus(Boolean status) {
-        this.status = status;
-    }
-
-    public LocalDateTime getDataCreated() {
-        return dataCreated;
-    }
-
-    public void setDataCreated(LocalDateTime dataCreated) {
-        this.dataCreated = dataCreated;
-    }
-
-    public LocalDateTime getDataUpdated() {
-        return dataUpdated;
-    }
-
-    public void setDataUpdated(LocalDateTime dataUpdated) {
-        this.dataUpdated = dataUpdated;
-    }
-
     public User getUser() {
         return user;
     }
@@ -122,5 +90,13 @@ public class Customer {
 
     public void setAddresses(List<Address> addresses) {
         this.addresses = addresses;
+    }
+
+    public List<Order> getOrders() {
+        return orders;
+    }
+
+    public void setOrders(List<Order> orders) {
+        this.orders = orders;
     }
 }

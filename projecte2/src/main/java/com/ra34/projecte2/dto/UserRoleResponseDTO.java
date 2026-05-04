@@ -1,12 +1,14 @@
 package com.ra34.projecte2.dto;
 
-public class UserResponseDTO {
+import java.util.List;
+
+public class UserRoleResponseDTO {
     private Long id;
     private String email;
-    private CustomerInfoDTO customer;
+    private List<RoleResponseDTO> roles;
 
     // Constructor
-    public UserResponseDTO() {}
+    public UserRoleResponseDTO() {}
 
     // Getters y Setters
     public Long getId() {
@@ -25,11 +27,11 @@ public class UserResponseDTO {
         this.email = email;
     }
 
-    public CustomerInfoDTO getCustomer() {
-        return customer;
+    public List<RoleResponseDTO> getRoles() {
+        return roles;
     }
 
-    public void setCustomer(CustomerInfoDTO customer) {
-        this.customer = customer;
+    public void setRoles(List<RoleResponseDTO> roles) {
+        this.roles = roles;
     }
 }

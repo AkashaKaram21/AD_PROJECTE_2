@@ -1,16 +1,11 @@
-package com.ra34.projecte2.model;
+package com.ra34.projecte2.dto;
 
-import jakarta.persistence.*;
-
-@Entity
-@Table(name = "role")
-public class Role {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+public class RoleResponseDTO {
     private Long id;
-
-    @Column(nullable = false, unique = true)
     private String name;
+
+    // Constructor
+    public RoleResponseDTO() {}
 
     // Getters y Setters
     public Long getId() {
